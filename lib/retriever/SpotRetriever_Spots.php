@@ -38,6 +38,7 @@ class SpotRetriever_Spots extends SpotRetriever_Abs {
 					case 'fullretrieved'	: echo $txt . " full, "; break;
 					case 'verified'			: echo "verified " . $txt . ", "; break;
 					case 'modcount'			: echo "moderated " . $txt . ", "; break;
+					case 'skipadult'			: echo "skipped adult " . $txt . ", "; break;
 					case 'skipcount'		: echo "skipped " . $txt . " of "; break;
 					case 'loopcount'		: echo $txt . " total messages)" . PHP_EOL; break;
 					case 'totalprocessed'	: echo "Processed a total of " . $txt . " spots" . PHP_EOL; break;
@@ -79,8 +80,10 @@ class SpotRetriever_Spots extends SpotRetriever_Abs {
 			$hdrsRetrieved = 0;
 			$fullsRetrieved = 0;
 			$modCount = 0;
+			$skipAdult = 0;
 			$skipCount = 0;
 			$lastProcessedId = '';
+			$subero = array('d23', 'd24', 'd25', 'd26');
 			
 			# pak onze lijst met messageid's, en kijk welke er al in de database zitten
 			$dbIdList = $this->_db->matchSpotMessageIds($hdrList);
@@ -131,12 +134,21 @@ class SpotRetriever_Spots extends SpotRetriever_Abs {
 						} # if
 						
 					} else {
+						$subcat = explode('|', strtolower($spot['subcatd']));
 						# Oudere spots niet toevoegen, hoeven we het later ook niet te verwijderen
 						if ($this->_settings['retention'] > 0 && $spot['stamp'] < time()-($this->_settings['retention'] * 24 * 60 * 60)) {
 							$skipCount++;
 						} elseif ($spot['stamp'] < $this->_settings['retrieve_newer_than']) { 
 							$skipCount++;
-						} else {
+						} 
+
+						# als erotiek filter aan staat worden deze spots ook verwijderd
+						elseif ((array_intersect($subero, $subcat)) && ($spot['category'] == "0") && ($this->_settings['adult_filter'] == "true")) {
+							$skipAdult++;
+							$skipCount++;
+							continue;
+						}
+						else {
 							# Hier kijken we alleen of de spotheader niet bestaat
 							if (!in_array($msgId, $dbIdList['spot'])) {
 								$this->_db->addSpot($spot);
@@ -201,6 +213,7 @@ class SpotRetriever_Spots extends SpotRetriever_Abs {
 				$this->displayStatus("fullretrieved", $fullsRetrieved);
 				$this->displayStatus("verified", $signedCount);
 				$this->displayStatus("modcount", $modCount);
+				$this->displayStatus("skipadult", $skipAdult);
 				$this->displayStatus("skipcount", $skipCount);
 				$this->displayStatus("loopcount", count($hdrList));
 			} else {
@@ -208,6 +221,7 @@ class SpotRetriever_Spots extends SpotRetriever_Abs {
 				$this->displayStatus("fullretrieved", 0);
 				$this->displayStatus("verified", 0);
 				$this->displayStatus("modcount", 0);
+				$this->displayStatus("skipadult", 0);
 				$this->displayStatus("skipcount", 0);
 				$this->displayStatus("loopcount", 0);
 			} # else

@@ -230,6 +230,9 @@ $settings['index_filter'] = array();
 # als je standaard geen erotiek wilt op de index, uncomment dan volgende filter, je kan wel erotiek vinden door te zoeken
 # $settings['index_filter'] = array('tree' => '~cat0_d23,~cat0_d24,~cat0_d25,~cat0_d26');
 
+# als je niet wilt dat de erotiek word geparsed en in je DB terecht komt verander dit in true.
+$settings['adult_filter'] = true;
+
 #
 # RSA keys
 # Worden gebruikt om te valideren of spots geldig zijn, hoef je normaal niet aan te komen
